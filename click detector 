@@ -1,0 +1,110 @@
+
+
+
+--print("Hello, World!")
+
+
+-- today is 04/14/2026, Tuesday, and now is 6:33pm, but i started this script a few minutes ago.
+-- And im now listening to Toccata and fugue in D minor
+-- Ended in 6:54pm, freak! Better word would be "finished", no one cares
+-- Returned in 15/04/2026, 7:22pm, Wednesday. will make the debug position shower (listening to Golden Brown [slowed])
+ 
+ -- Hello! Felipe here. 9:13pm, its now, at the same day of 04/15/2026. Now, as im uploading this file to GitHub, i have to say that this script is located on a LOCALSCRIPT in the ScreenGui. Just that!
+
+
+local screenGui = script.Parent
+local debugButton = screenGui:WaitForChild("Debug")
+local debugFrame = debugButton:WaitForChild("DebugFrame")
+local textLabelsFolder = debugFrame:WaitForChild("TextLabelsFolder")
+ 
+local debugPosition = textLabelsFolder:WaitForChild("DebugPosition")
+local debugPositionPresetText = "Phantom-block.Pos: X="
+ 
+ 
+local uis = game:GetService("UserInputService")
+local rs = game:GetService("ReplicatedStorage")
+
+local pickupItensFolder = rs:WaitForChild("ItensToPick")
+
+local areaObject = pickupItensFolder:WaitForChild("PlaceArea")
+local yOffset = areaObject.Size.Y / 2
+
+local grid = 8
+local half = grid / 2
+local raycastMaximumDistance = 50
+
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local cam = workspace.CurrentCamera
+ 
+local playerScripts = player:WaitForChild("PlayerScripts")
+local playerStatusModule = require(playerScripts:WaitForChild("PlayerStatus"))
+
+local raycastParams = RaycastParams.new()
+raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+raycastParams.FilterDescendantsInstances = {char}
+
+
+local function check()
+    
+    local actualMachine = playerStatusModule.ActualMachineId
+    
+    if actualMachine == 0 then return end
+    
+    return true
+    
+end
+ 
+ 
+local function makeRaycast(input)
+    
+    if areaObject.Parent ~= workspace then
+        areaObject.Parent = workspace 
+    end
+    
+    local pos = input.Position
+    local x, y = pos.X, pos.Y
+    
+    local originAndDirection = cam:ScreenPointToRay(x, y)
+    
+    local raycast = workspace:Raycast(originAndDirection.Origin, originAndDirection.Direction * raycastMaximumDistance, raycastParams)
+    
+    if not raycast then return end
+    
+    
+    local raycastPosition = raycast.Position
+    local nextX, nextZ = math.floor(raycastPosition.X / grid) * grid+ half, math.floor(raycastPosition.Z / grid) * grid + half
+    
+    
+    local calculedPosition = Vector3.new(nextX, raycastPosition.Y + yOffset, nextZ)
+    
+    areaObject.Position = calculedPosition
+    local aOPos = areaObject.Position
+    debugPosition.Text = debugPositionPresetText.. aOPos.X.. " Y=".. aOPos.Y.. " Z=".. aOPos.Z
+    
+end
+
+
+local changeParents 
+ 
+changeParents = uis.InputBegan:Connect(function(input, gp)
+    
+    if not check() then return end
+    
+    if gp then return end
+    
+    areaObject.Parent = workspace 
+    makeRaycast(input)
+    changeParents:Disconnect()
+    
+end)
+ 
+ 
+uis.InputBegan:Connect(function(input, gp)
+    
+    if not check() then return end
+    
+    if gp then return end
+    makeRaycast(input)
+    
+end)
